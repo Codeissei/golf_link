@@ -40,7 +40,7 @@ body {
 
 /* ヘッダー */
 header {
-    background-color: var(--primary-color);
+    background-color: #8B0000; /* ボルドー（ワインレッド）色 */
     color: white;
     padding: 1rem 0;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
@@ -64,7 +64,7 @@ main {
 
 /* フッター */
 footer {
-    background-color: var(--primary-color);
+    background-color: #8B0000; /* ボルドー（ワインレッド）色 */
     color: white;
     padding: 1rem 0;
     text-align: center;
@@ -118,8 +118,8 @@ textarea:focus {
 }
 
 button {
-    background-color: var(--accent-color);
-    color: white;
+    background-color: #F5EBDD; /* 薄いピンクベージュ */
+    color: #333; /* 背景色が明るいので文字色を暗くする */
     border: none;
     border-radius: var(--border-radius);
     padding: 0.8rem 2rem;
@@ -132,7 +132,7 @@ button {
 }
 
 button:hover {
-    background-color: #219653;
+    background-color: #E8D8C3; /* ホバー時は少し暗く */
 }
 
 button:disabled {
@@ -180,27 +180,30 @@ button:disabled {
     background-color: var(--light-gray);
     border-radius: var(--border-radius);
     padding: 1rem;
-    align-self: flex-start;
-    max-width: 80%;
-    margin-left: 0;
-    margin-right: auto;
-}
-
-.chat-message.ai .message-content {
-    background-color: var(--secondary-color);
-    color: white;
-    border-radius: var(--border-radius);
-    padding: 1rem;
-    align-self: flex-end;
+    align-self: flex-end; /* 右側に配置 */
     max-width: 80%;
     margin-left: auto;
     margin-right: 0;
 }
 
+.chat-message.ai .message-content {
+    background-color: #F5EBDD; /* 薄いピンクベージュ */
+    color: #333;
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    align-self: flex-start; /* 左側に配置 */
+    max-width: 80%;
+    margin-left: 0;
+    margin-right: auto;
+}
+
 .message-time {
     font-size: 0.8rem;
     color: var(--dark-gray);
-    margin-top: 0.5rem;
+    margin-top: 0.3rem;
+    margin-bottom: 0.5rem;
+    text-align: right;
+    padding-right: 1rem;
 }
 
 .no-results {
@@ -231,11 +234,12 @@ button:disabled {
 }
 
 .back-btn {
-    background-color: var(--primary-color);
+    background-color: var(--light-gray); /* グレー */
+    color: #333; /* 背景色が明るいので文字色を暗くする */
 }
 
 .back-btn:hover {
-    background-color: #1e2b38;
+    background-color: #c0c0c0; /* ホバー時は少し暗いグレー */
 }
 
 /* レスポンシブ対応 */
@@ -280,6 +284,36 @@ button:disabled {
     .chat-message.ai .message-content {
         max-width: 100%;
     }
+}
+
+/* ローディングインジケーター */
+.loading-indicator {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--light-gray);
+}
+
+.progress-bar {
+    height: 8px;
+    background-color: var(--light-gray);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background-color: #F5EBDD; /* 薄いピンクベージュ */
+    width: 0%;
+    transition: width 0.3s linear;
+}
+
+.elapsed-time {
+    font-size: 0.9rem;
+    color: var(--dark-gray);
+    text-align: center;
 }
 
 /* アクセシビリティ対応 */

@@ -73,6 +73,30 @@
             submitBtn.textContent = '送信中...';
             errorMessage.style.display = 'none';
             
+            // ローディングインジケーターを表示
+            const loadingIndicator = document.createElement('div');
+            loadingIndicator.className = 'loading-indicator';
+            loadingIndicator.innerHTML = `
+                <div class="progress-bar">
+                    <div class="progress-bar-fill"></div>
+                </div>
+                <div class="elapsed-time">経過時間: <span id="elapsed-seconds">0</span>秒</div>
+            `;
+            form.appendChild(loadingIndicator);
+            
+            // 経過時間を表示するタイマーを開始
+            const startTime = Date.now();
+            const elapsedSecondsElement = document.getElementById('elapsed-seconds');
+            const timer = setInterval(() => {
+                const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+                elapsedSecondsElement.textContent = elapsedSeconds;
+                
+                // プログレスバーを更新（最大20秒を想定）
+                const progressFill = document.querySelector('.progress-bar-fill');
+                const progress = Math.min(elapsedSeconds / 20, 1);
+                progressFill.style.width = `${progress * 100}%`;
+            }, 1000);
+            
             try {
                 // APIリクエスト
                 const response = await fetch('/api/ask', {
@@ -86,6 +110,9 @@
                 
                 const data = await response.json();
                 
+                // タイマーを停止
+                clearInterval(timer);
+                
                 if (response.ok && data.status === 'success') {
                     // 成功時は結果ページへリダイレクト
                     window.location.href = '/result';
@@ -95,13 +122,22 @@
                     errorMessage.style.display = 'block';
                     submitBtn.disabled = false;
                     submitBtn.textContent = '送 信';
+                    
+                    // ローディングインジケーターを削除
+                    form.removeChild(loadingIndicator);
                 }
             } catch (error) {
+                // タイマーを停止
+                clearInterval(timer);
+                
                 console.error('Error:', error);
                 errorMessage.textContent = 'エラーが発生しました。後でもう一度お試しください。';
                 errorMessage.style.display = 'block';
                 submitBtn.disabled = false;
                 submitBtn.textContent = '送 信';
+                
+                // ローディングインジケーターを削除
+                form.removeChild(loadingIndicator);
             }
         });
     });

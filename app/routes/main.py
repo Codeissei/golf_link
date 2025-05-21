@@ -5,7 +5,7 @@ from flask import (
 from werkzeug.exceptions import BadRequest, RequestTimeout
 import uuid
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import json
 
 from app.services.perplexity import query_perplexity
@@ -58,8 +58,9 @@ def ask():
         answer = response.get('choices', [{}])[0].get('message', {}).get('content', '')
         usage = response.get('usage', {})
         
-        # タイムスタンプを生成
-        timestamp = datetime.now(timezone.utc).isoformat()
+        # タイムスタンプを生成（日本時間 = UTC+9）
+        jst = timezone(timedelta(hours=9))
+        timestamp = datetime.now(jst).isoformat()
         
         # セッションにQ&Aを保存
         qa_item = {
