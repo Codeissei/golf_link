@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block title %}回答 - Golf AI Strategist{% endblock %}
+
+{% block content %}
+<div class="result-container">
+    {% if qa and qa|length > 0 %}
+        <div class="chat-container">
+            {% for item in qa %}
+                <div class="chat-message user">
+                    <div class="message-content">
+                        <p>{{ item.q|nl2br }}</p>
+                    </div>
+                    <div class="message-time" aria-label="質問時刻">
+                        {{ item.ts|format_datetime }}
+                    </div>
+                </div>
+                <div class="chat-message ai">
+                    <div class="message-content">
+                        <p>{{ item.a|nl2br }}</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="no-results">
+            <p>回答がありません。<a href="{{ url_for('main.index') }}">ホームに戻る</a>して質問してください。</p>
+        </div>
+    {% endif %}
+    
+    <div class="action-buttons">
+        <a href="{{ url_for('main.index') }}" class="btn back-btn" aria-label="ホームに戻る">新しい質問をする</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block head %}
+{% endblock %}

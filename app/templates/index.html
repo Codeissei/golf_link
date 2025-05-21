@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+
+{% block title %}ホーム - Golf AI Strategist{% endblock %}
+
+{% block content %}
+<div class="input-form">
+    <form id="question-form" aria-label="ゴルフコース攻略質問フォーム">
+        <div class="form-group">
+            <label for="question" class="sr-only">攻略したいホールや悩みを入力</label>
+            <textarea 
+                id="question" 
+                name="question" 
+                rows="4" 
+                placeholder="攻略したいホールや悩みを入力（例：Par5 480y、左ドッグレッグ、持ち球フェード等）" 
+                aria-required="true"
+                maxlength="1000"
+                required
+            ></textarea>
+            <div class="char-count"><span id="char-count">0</span>/1000</div>
+        </div>
+        <div class="form-group">
+            <button type="submit" id="submit-btn" aria-label="送信する">送 信</button>
+        </div>
+        <div id="error-message" class="error-message" role="alert" aria-live="assertive"></div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('question-form');
+        const textarea = document.getElementById('question');
+        const submitBtn = document.getElementById('submit-btn');
+        const errorMessage = document.getElementById('error-message');
+        const charCount = document.getElementById('char-count');
+        
+        // 文字数カウント
+        textarea.addEventListener('input', function() {
+            const count = this.value.length;
+            charCount.textContent = count;
+            
+            if (count > 1000) {
+                charCount.classList.add('error');
+            } else {
+                charCount.classList.remove('error');
+            }
+        });
+        
+        // フォーム送信
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const question = textarea.value.trim();
+            
+            // バリデーション
+            if (!question) {
+                errorMessage.textContent = '質問を入力してください';
+                errorMessage.style.display = 'block';
+                textarea.focus();
+                return;
+            }
+            
+            if (question.length > 1000) {
+                errorMessage.textContent = '質問は1000文字以内にしてください';
+                errorMessage.style.display = 'block';
+                textarea.focus();
+                return;
+            }
+            
+            // 送信ボタンを無効化
+            submitBtn.disabled = true;
+            submitBtn.textContent = '送信中...';
+            errorMessage.style.display = 'none';
+            
+            try {
+                // APIリクエスト
+                const response = await fetch('/api/ask', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ question: question })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.status === 'success') {
+                    // 成功時は結果ページへリダイレクト
+                    window.location.href = '/result';
+                } else {
+                    // エラーメッセージを表示
+                    errorMessage.textContent = data.error || 'エラーが発生しました。後でもう一度お試しください。';
+                    errorMessage.style.display = 'block';
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = '送 信';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                errorMessage.textContent = 'エラーが発生しました。後でもう一度お試しください。';
+                errorMessage.style.display = 'block';
+                submitBtn.disabled = false;
+                submitBtn.textContent = '送 信';
+            }
+        });
+    });
+</script>
+{% endblock %}

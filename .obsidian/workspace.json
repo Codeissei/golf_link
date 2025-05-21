@@ -1,0 +1,207 @@
+{
+  "main": {
+    "id": "051a004dc660b8c3",
+    "type": "split",
+    "children": [
+      {
+        "id": "e750ddf9051a8fb3",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "4575d91b6a789f2a",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "要求定義書.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "要求定義書"
+            }
+          },
+          {
+            "id": "948f5df2bbce34bc",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "開発手順.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "開発手順"
+            }
+          }
+        ],
+        "currentTab": 1
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "c3a1be4effbb9ec1",
+    "type": "split",
+    "children": [
+      {
+        "id": "adb90ab23081b968",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "e478ec2d3141e847",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "ファイルエクスプローラ"
+            }
+          },
+          {
+            "id": "20a6eff4198a60ac",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "検索"
+            }
+          },
+          {
+            "id": "e16d7eb468a90c51",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "ブックマーク"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "7f039eb37a51ff29",
+    "type": "split",
+    "children": [
+      {
+        "id": "06532983cde5eb12",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "d2831f363428ebb9",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "開発手順.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "開発手順へのバックリンク"
+            }
+          },
+          {
+            "id": "f7859db9c7be7865",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "開発手順.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "開発手順からのアウトゴーイングリンク"
+            }
+          },
+          {
+            "id": "7dda9ee1b8011a91",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "タグ"
+            }
+          },
+          {
+            "id": "ab2f251ec3ee9a3d",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "開発手順.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "開発手順のアウトライン"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:クイックスイッチャーを開く": false,
+      "graph:グラフビューを開く": false,
+      "canvas:新規キャンバスを作成": false,
+      "daily-notes:今日のデイリーノートを開く": false,
+      "templates:テンプレートを挿入": false,
+      "command-palette:コマンドパレットを開く": false
+    }
+  },
+  "active": "948f5df2bbce34bc",
+  "lastOpenFiles": [
+    "flask_session/tmpc7x4gfgh.__wz_cache",
+    "flask_session/tmpuma9240p.__wz_cache",
+    "flask_session/tmpi4zv0ckf.__wz_cache",
+    "flask_session/8506332beadaddd916270c81340951c5",
+    "flask_session/tmpek979hsg.__wz_cache",
+    "flask_session/tmprfv1wzva.__wz_cache",
+    "flask_session/tmprrdx0w8j.__wz_cache",
+    "flask_session/tmp9zunculy.__wz_cache",
+    "flask_session/tmpppt0ts_x.__wz_cache",
+    "flask_session/tmp3ajoj8lp.__wz_cache",
+    "flask_session/tmp1rk6c60t.__wz_cache",
+    "README.md",
+    "Pasted image 20250521134042.png",
+    "Pasted image 20250521134025.png",
+    "要件定義書.md",
+    "開発手順.md",
+    "要求定義書.md",
+    "Welcome.md"
+  ]
+}
