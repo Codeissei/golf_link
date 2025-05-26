@@ -1,0 +1,201 @@
+{% extends 'base.html' %}
+
+{% block title %}メッセージ{% endblock %}
+
+{% block content %}
+<div id="username-container" class="username-form card">
+    <h2>メッセージにようこそ</h2>
+    <p>メッセージのやりとりをするには、お名前の入力が必要です。</p>
+    <div class="form-group">
+        <label for="username">お名前</label>
+        <input type="text" id="username" placeholder="お名前を入力してください" autocomplete="name">
+    </div>
+    <button id="save-username" class="btn btn-primary">
+        <span class="material-icons">login</span>開始する
+    </button>
+</div>
+
+<div id="messages-content" style="display: none;">
+    <div class="card">
+        <h2>新規メッセージ</h2>
+        <form id="new-conversation-form">
+            <div class="form-group">
+                <label for="receiver">送信先</label>
+                <input type="text" id="receiver" placeholder="メッセージを送る相手の名前" required>
+            </div>
+            <div class="form-buttons">
+                <button type="submit" class="btn btn-primary">
+                    <span class="material-icons">chat</span>メッセージを送る
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <div class="card">
+        <h2>メッセージ履歴</h2>
+        <div id="contacts-list">
+            <div class="loading-container" style="text-align: center; padding: 2rem;">
+                <div class="loading"></div>
+                <p>連絡先を読み込んでいます...</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // ユーザー名の保存と表示切替
+    document.getElementById('save-username').addEventListener('click', function() {
+        const usernameInput = document.getElementById('username');
+        const username = usernameInput.value.trim();
+        
+        if (username) {
+            localStorage.setItem('username', username);
+            document.getElementById('username-container').style.display = 'none';
+            document.getElementById('messages-content').style.display = 'block';
+            
+            // Socket.IOのルームに参加
+            socket.emit('join', { username: username });
+            
+            // 連絡先を読み込む
+            loadContacts();
+        } else {
+            alert('お名前を入力してください');
+        }
+    });
+    
+    // ページ読み込み時にユーザー名があれば表示を切り替える
+    window.addEventListener('DOMContentLoaded', function() {
+        const username = localStorage.getItem('username');
+        if (username) {
+            document.getElementById('username-container').style.display = 'none';
+            document.getElementById('messages-content').style.display = 'block';
+            
+            // 連絡先を読み込む
+            loadContacts();
+        }
+    });
+    
+    // 連絡先一覧の読み込み
+    function loadContacts() {
+        const username = localStorage.getItem('username');
+        if (!username) return;
+        
+        fetch(`/messages/api/contacts?sender=${encodeURIComponent(username)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    displayContacts(data.contacts);
+                } else {
+                    console.error('連絡先の読み込みに失敗しました:', data.error);
+                }
+            })
+            .catch(error => {
+                console.error('エラー:', error);
+            });
+    }
+    
+    // 連絡先の表示
+    function displayContacts(contacts) {
+        const container = document.getElementById('contacts-list');
+        container.innerHTML = '';
+        
+        if (contacts.length === 0) {
+            container.innerHTML = '<div style="text-align: center; padding: 2rem;"><p>まだメッセージのやり取りはありません。新規メッセージを送信しましょう！</p></div>';
+            return;
+        }
+        
+        const contactsList = document.createElement('div');
+        contactsList.className = 'contacts';
+        
+        contacts.forEach(contact => {
+            const contactItem = document.createElement('div');
+            contactItem.className = 'contact-item';
+            contactItem.dataset.username = contact.username;
+            
+            // 最新メッセージの内容と日時
+            let previewText = '新しい会話';
+            let timeText = '';
+            
+            if (contact.latest_message) {
+                previewText = contact.latest_message.content;
+                timeText = formatDateShort(contact.latest_message.created_at);
+            }
+            
+            // 未読件数バッジ
+            let unreadBadge = '';
+            if (contact.unread_count > 0) {
+                unreadBadge = `<span class="unread-badge">${contact.unread_count}</span>`;
+            }
+            
+            contactItem.innerHTML = `
+                <div class="contact-info">
+                    <div class="contact-name">${contact.username}</div>
+                    <div class="contact-preview">${previewText}</div>
+                </div>
+                <div class="contact-meta">
+                    <div class="contact-time">${timeText}</div>
+                    ${unreadBadge}
+                </div>
+            `;
+            
+            contactItem.addEventListener('click', function() {
+                window.location.href = `/messages/${encodeURIComponent(contact.username)}`;
+            });
+            
+            contactsList.appendChild(contactItem);
+        });
+        
+        container.appendChild(contactsList);
+    }
+    
+    // 日付の短いフォーマット (今日なら時刻のみ、それ以外は日付)
+    function formatDateShort(dateString) {
+        const date = new Date(dateString);
+        const now = new Date();
+        
+        // 日付が同じかどうか確認
+        const sameDate = date.getFullYear() === now.getFullYear() &&
+                         date.getMonth() === now.getMonth() &&
+                         date.getDate() === now.getDate();
+        
+        if (sameDate) {
+            // 今日の場合は時刻のみ
+            return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+        } else {
+            // それ以外は日付
+            return `${date.getMonth() + 1}/${date.getDate()}`;
+        }
+    }
+    
+    // 新規メッセージフォームの設定
+    document.getElementById('new-conversation-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const receiver = document.getElementById('receiver').value.trim();
+        if (!receiver) {
+            alert('送信先を入力してください');
+            return;
+        }
+        
+        // 連絡先ページに移動
+        window.location.href = `/messages/${encodeURIComponent(receiver)}`;
+    });
+    
+    // Socket.IOイベント - 新規メッセージ
+    socket.on('new_message', function(message) {
+        // ユーザー名が自分宛か、自分が送信者の場合に連絡先リストを更新
+        const username = localStorage.getItem('username');
+        if (username === message.receiver || username === message.sender) {
+            loadContacts();
+        }
+    });
+    
+    // Socket.IOイベント - 既読にしたとき
+    socket.on('read_messages', function(data) {
+        // 連絡先リストを更新
+        loadContacts();
+    });
+</script>
+{% endblock %}

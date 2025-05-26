@@ -1,0 +1,451 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ receiver }}とのメッセージ{% endblock %}
+
+{% block content %}
+<div id="username-container" class="username-form card">
+    <h2>メッセージにようこそ</h2>
+    <p>メッセージを送信するには、お名前の入力が必要です。</p>
+    <div class="form-group">
+        <label for="username">お名前</label>
+        <input type="text" id="username" placeholder="お名前を入力してください" autocomplete="name">
+    </div>
+    <button id="save-username" class="btn btn-primary">
+        <span class="material-icons">login</span>開始する
+    </button>
+</div>
+
+<div id="chat-content" style="display: none;">
+    <div class="messages-container">
+        <div class="contacts-list">
+            <div class="loading-container" style="text-align: center; padding: 2rem;">
+                <div class="loading"></div>
+                <p>連絡先を読み込んでいます...</p>
+            </div>
+        </div>
+        
+        <div class="chat-container">
+            <div class="chat-header">
+                <span id="chat-receiver">{{ receiver }}</span>
+            </div>
+            <div id="chat-messages" class="chat-messages">
+                <div class="loading-container" style="text-align: center; padding: 2rem;">
+                    <div class="loading"></div>
+                    <p>メッセージを読み込んでいます...</p>
+                </div>
+            </div>
+            <form id="message-form" class="message-form">
+                <div class="file-input-container">
+                    <button type="button" class="btn btn-secondary">
+                        <span class="material-icons">attach_file</span>
+                    </button>
+                    <input type="file" id="message-files" name="files" multiple>
+                </div>
+                <textarea id="message-content" placeholder="メッセージを入力" required></textarea>
+                <button type="submit" class="btn btn-primary">
+                    <span class="material-icons">send</span>
+                </button>
+                <div id="attachments-preview" class="attachment-preview"></div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 現在の受信者
+    const currentReceiver = "{{ receiver }}";
+    
+    // ユーザー名の保存と表示切替
+    document.getElementById('save-username').addEventListener('click', function() {
+        const usernameInput = document.getElementById('username');
+        const username = usernameInput.value.trim();
+        
+        if (username) {
+            localStorage.setItem('username', username);
+            document.getElementById('username-container').style.display = 'none';
+            document.getElementById('chat-content').style.display = 'block';
+            
+            // Socket.IOのルームに参加
+            socket.emit('join', { username: username });
+            
+            // 連絡先とメッセージを読み込む
+            loadContacts();
+            loadMessages();
+        } else {
+            alert('お名前を入力してください');
+        }
+    });
+    
+    // ページ読み込み時にユーザー名があれば表示を切り替える
+    window.addEventListener('DOMContentLoaded', function() {
+        const username = localStorage.getItem('username');
+        if (username) {
+            document.getElementById('username-container').style.display = 'none';
+            document.getElementById('chat-content').style.display = 'block';
+            
+            // 連絡先とメッセージを読み込む
+            loadContacts();
+            loadMessages();
+            
+            // メッセージを既読にする
+            markAsRead();
+        }
+    });
+    
+    // 連絡先一覧の読み込み
+    function loadContacts() {
+        const username = localStorage.getItem('username');
+        if (!username) return;
+        
+        fetch(`/messages/api/contacts?sender=${encodeURIComponent(username)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    displayContacts(data.contacts);
+                } else {
+                    console.error('連絡先の読み込みに失敗しました:', data.error);
+                }
+            })
+            .catch(error => {
+                console.error('エラー:', error);
+            });
+    }
+    
+    // 連絡先の表示
+    function displayContacts(contacts) {
+        const container = document.querySelector('.contacts-list');
+        container.innerHTML = '';
+        
+        if (contacts.length === 0) {
+            container.innerHTML = '<div style="text-align: center; padding: 1rem;"><p>連絡先がありません</p></div>';
+            return;
+        }
+        
+        contacts.forEach(contact => {
+            const contactItem = document.createElement('div');
+            contactItem.className = 'contact-item';
+            if (contact.username === currentReceiver) {
+                contactItem.className += ' active';
+            }
+            contactItem.dataset.username = contact.username;
+            
+            // 最新メッセージの内容と日時
+            let previewText = '新しい会話';
+            let timeText = '';
+            
+            if (contact.latest_message) {
+                previewText = contact.latest_message.content;
+                timeText = formatDateShort(contact.latest_message.created_at);
+            }
+            
+            // 未読件数バッジ
+            let unreadBadge = '';
+            if (contact.unread_count > 0) {
+                unreadBadge = `<span class="unread-badge">${contact.unread_count}</span>`;
+            }
+            
+            contactItem.innerHTML = `
+                <div class="contact-info">
+                    <div class="contact-name">${contact.username}</div>
+                    <div class="contact-preview">${previewText}</div>
+                </div>
+                <div class="contact-meta">
+                    <div class="contact-time">${timeText}</div>
+                    ${unreadBadge}
+                </div>
+            `;
+            
+            contactItem.addEventListener('click', function() {
+                window.location.href = `/messages/${encodeURIComponent(contact.username)}`;
+            });
+            
+            container.appendChild(contactItem);
+        });
+    }
+    
+    // メッセージの読み込み
+    function loadMessages() {
+        const username = localStorage.getItem('username');
+        if (!username) return;
+        
+        fetch(`/messages/api/conversations/${encodeURIComponent(currentReceiver)}?sender=${encodeURIComponent(username)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    displayMessages(data.messages);
+                } else {
+                    console.error('メッセージの読み込みに失敗しました:', data.error);
+                }
+            })
+            .catch(error => {
+                console.error('エラー:', error);
+            });
+    }
+    
+    // メッセージの表示
+    function displayMessages(messages) {
+        const container = document.getElementById('chat-messages');
+        container.innerHTML = '';
+        
+        if (messages.length === 0) {
+            container.innerHTML = '<div style="text-align: center; padding: 2rem;"><p>まだメッセージはありません。最初のメッセージを送信しましょう！</p></div>';
+            return;
+        }
+        
+        const username = localStorage.getItem('username');
+        
+        messages.forEach(message => {
+            const messageElement = document.createElement('div');
+            messageElement.className = 'message';
+            
+            // 送信者が自分かどうかでクラスを分ける
+            if (message.sender === username) {
+                messageElement.className += ' message-sent';
+            } else {
+                messageElement.className += ' message-received';
+            }
+            
+            // メッセージの内容
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+            bubble.textContent = message.content;
+            
+            // メッセージのメタ情報
+            const meta = document.createElement('div');
+            meta.className = 'message-meta';
+            meta.textContent = formatTime(message.created_at);
+            
+            // 添付ファイル
+            let attachments = '';
+            if (message.attachments && message.attachments.length > 0) {
+                const attachmentsDiv = document.createElement('div');
+                attachmentsDiv.className = 'message-attachments';
+                
+                message.attachments.forEach(attachment => {
+                    const attachmentLink = document.createElement('a');
+                    attachmentLink.className = 'attachment';
+                    attachmentLink.href = `/messages/api/attachments/${attachment.id}`;
+                    attachmentLink.target = '_blank';
+                    
+                    const icon = document.createElement('span');
+                    icon.className = 'material-icons';
+                    icon.textContent = getFileIcon(attachment.filename);
+                    
+                    attachmentLink.appendChild(icon);
+                    attachmentLink.appendChild(document.createTextNode(attachment.filename));
+                    attachmentsDiv.appendChild(attachmentLink);
+                });
+                
+                attachments = attachmentsDiv.outerHTML;
+            }
+            
+            // 要素の組み立て
+            messageElement.innerHTML = `
+                ${bubble.outerHTML}
+                ${attachments}
+                ${meta.outerHTML}
+            `;
+            
+            container.appendChild(messageElement);
+        });
+        
+        // スクロールを一番下に
+        scrollToBottom();
+    }
+    
+    // スクロールを一番下に移動
+    function scrollToBottom() {
+        const container = document.getElementById('chat-messages');
+        container.scrollTop = container.scrollHeight;
+    }
+    
+    // メッセージを既読にする
+    function markAsRead() {
+        const username = localStorage.getItem('username');
+        if (!username) return;
+        
+        fetch(`/messages/api/messages/read/${encodeURIComponent(currentReceiver)}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `receiver=${encodeURIComponent(username)}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // 既読成功
+                loadContacts();  // 連絡先リストの未読バッジを更新
+            } else {
+                console.error('既読設定に失敗しました:', data.error);
+            }
+        })
+        .catch(error => {
+            console.error('エラー:', error);
+        });
+    }
+    
+    // メッセージ送信フォームの設定
+    document.getElementById('message-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const content = document.getElementById('message-content').value.trim();
+        const username = localStorage.getItem('username');
+        
+        if (!content || !username) {
+            alert('メッセージとユーザー名は必須です');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('content', content);
+        formData.append('sender', username);
+        formData.append('receiver', currentReceiver);
+        
+        const fileInput = document.getElementById('message-files');
+        for (let i = 0; i < fileInput.files.length; i++) {
+            formData.append('files', fileInput.files[i]);
+        }
+        
+        fetch('/messages/api/messages', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // フォームをリセット
+                document.getElementById('message-content').value = '';
+                document.getElementById('message-files').value = '';
+                document.getElementById('attachments-preview').innerHTML = '';
+                
+                // メッセージリストに追加
+                loadMessages();
+            } else {
+                alert('送信に失敗しました: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('エラー:', error);
+            alert('送信中にエラーが発生しました');
+        });
+    });
+    
+    // ファイル選択時のプレビュー表示
+    document.getElementById('message-files').addEventListener('change', function() {
+        const container = document.getElementById('attachments-preview');
+        container.innerHTML = '';
+        
+        if (this.files.length > 0) {
+            const fileList = document.createElement('div');
+            fileList.className = 'file-list';
+            
+            for (let i = 0; i < this.files.length; i++) {
+                const file = this.files[i];
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                
+                const icon = document.createElement('span');
+                icon.className = 'material-icons';
+                icon.textContent = getFileIcon(file.name);
+                
+                fileItem.appendChild(icon);
+                fileItem.appendChild(document.createTextNode(file.name));
+                fileList.appendChild(fileItem);
+            }
+            
+            container.appendChild(fileList);
+        }
+    });
+    
+    // 時間のフォーマット (HH:MM)
+    function formatTime(dateString) {
+        const date = new Date(dateString);
+        return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+    }
+    
+    // 日付の短いフォーマット (今日なら時刻のみ、それ以外は日付)
+    function formatDateShort(dateString) {
+        const date = new Date(dateString);
+        const now = new Date();
+        
+        // 日付が同じかどうか確認
+        const sameDate = date.getFullYear() === now.getFullYear() &&
+                         date.getMonth() === now.getMonth() &&
+                         date.getDate() === now.getDate();
+        
+        if (sameDate) {
+            // 今日の場合は時刻のみ
+            return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+        } else {
+            // それ以外は日付
+            return `${date.getMonth() + 1}/${date.getDate()}`;
+        }
+    }
+    
+    // ファイルタイプに応じたアイコンを取得
+    function getFileIcon(filename) {
+        const ext = filename.split('.').pop().toLowerCase();
+        
+        switch (ext) {
+            case 'pdf':
+                return 'picture_as_pdf';
+            case 'doc':
+            case 'docx':
+                return 'description';
+            case 'xls':
+            case 'xlsx':
+                return 'table_chart';
+            case 'ppt':
+            case 'pptx':
+                return 'slideshow';
+            case 'jpg':
+            case 'jpeg':
+            case 'png':
+            case 'gif':
+            case 'bmp':
+                return 'image';
+            case 'mp4':
+            case 'avi':
+            case 'mov':
+                return 'movie';
+            case 'mp3':
+            case 'wav':
+            case 'ogg':
+                return 'audio_file';
+            case 'zip':
+            case 'rar':
+            case '7z':
+                return 'archive';
+            default:
+                return 'insert_drive_file';
+        }
+    }
+    
+    // Socket.IOイベント - 新規メッセージ
+    socket.on('new_message', function(message) {
+        // 自分と現在の相手とのメッセージの場合、メッセージリストを更新
+        const username = localStorage.getItem('username');
+        if ((message.sender === currentReceiver && message.receiver === username) ||
+            (message.sender === username && message.receiver === currentReceiver)) {
+            loadMessages();
+            
+            // 自分宛のメッセージなら既読にする
+            if (message.receiver === username) {
+                markAsRead();
+            }
+        }
+        
+        // 連絡先リストも更新
+        loadContacts();
+    });
+    
+    // Socket.IOイベント - 既読にしたとき
+    socket.on('read_messages', function(data) {
+        // 連絡先リストを更新
+        loadContacts();
+    });
+</script>
+{% endblock %}

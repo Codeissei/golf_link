@@ -1,0 +1,610 @@
+{% extends 'base.html' %}
+
+{% block title %}連絡板{% endblock %}
+
+{% block content %}
+<div class="board-container">
+    <div id="username-container" class="username-form card">
+        <h2>連絡板にようこそ</h2>
+        <p>投稿やコメントをするには、お名前の入力が必要です。</p>
+        <div class="form-group">
+            <label for="username">お名前</label>
+            <input type="text" id="username" placeholder="お名前を入力してください" autocomplete="name">
+        </div>
+        <button id="save-username" class="btn btn-primary">
+            <span class="material-icons">login</span>開始する
+        </button>
+    </div>
+    
+    <div id="board-content" style="display: none;">
+        <div class="new-post-form card">
+            <h3>新しい投稿</h3>
+            <form id="new-post-form">
+                <div class="form-group">
+                    <label for="post-content">内容</label>
+                    <textarea id="post-content" name="content" placeholder="投稿内容を入力してください" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="post-files">ファイル添付 (任意)</label>
+                    <div class="file-input-container">
+                        <button type="button" class="btn btn-secondary">
+                            <span class="material-icons">attach_file</span>ファイルを選択
+                        </button>
+                        <input type="file" id="post-files" name="files" multiple>
+                    </div>
+                    <div id="post-attachments-preview" class="attachment-preview"></div>
+                </div>
+                <div class="form-buttons">
+                    <button type="submit" class="btn btn-primary">
+                        <span class="material-icons">send</span>投稿する
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <div id="posts-container">
+            <div class="loading-container" style="text-align: center; padding: 2rem;">
+                <div class="loading"></div>
+                <p>投稿を読み込んでいます...</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // ユーザー名の保存と表示切替
+    document.getElementById('save-username').addEventListener('click', function() {
+        const usernameInput = document.getElementById('username');
+        const username = usernameInput.value.trim();
+        
+        if (username) {
+            localStorage.setItem('username', username);
+            document.getElementById('username-container').style.display = 'none';
+            document.getElementById('board-content').style.display = 'block';
+            
+            // Socket.IOのルームに参加
+            socket.emit('join', { username: username });
+            
+            // 投稿を読み込む
+            loadPosts();
+        } else {
+            alert('お名前を入力してください');
+        }
+    });
+    
+    // ページ読み込み時にユーザー名があれば表示を切り替える
+    window.addEventListener('DOMContentLoaded', function() {
+        const username = localStorage.getItem('username');
+        if (username) {
+            document.getElementById('username-container').style.display = 'none';
+            document.getElementById('board-content').style.display = 'block';
+            
+            // 投稿を読み込む
+            loadPosts();
+        }
+    });
+    
+    // 投稿一覧の読み込み
+    function loadPosts() {
+        fetch('/board/api/posts')
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    displayPosts(data.posts);
+                } else {
+                    console.error('投稿の読み込みに失敗しました:', data.error);
+                }
+            })
+            .catch(error => {
+                console.error('エラー:', error);
+            });
+    }
+    
+    // 投稿の表示
+    function displayPosts(posts) {
+        const container = document.getElementById('posts-container');
+        container.innerHTML = '';
+        
+        if (posts.length === 0) {
+            container.innerHTML = '<div class="card" style="text-align: center; padding: 2rem;"><p>まだ投稿がありません。最初の投稿をしましょう！</p></div>';
+            return;
+        }
+        
+        posts.forEach(post => {
+            container.appendChild(createPostElement(post));
+        });
+    }
+    
+    // 投稿要素の作成（完全DOM操作に変更）
+    function createPostElement(post) {
+        const postElement = document.createElement('div');
+        postElement.className = 'post';
+        postElement.dataset.id = post.id;
+        
+        // 投稿ヘッダー - フレックスボックスを使用してレイアウトを調整
+        const header = document.createElement('div');
+        header.className = 'post-header';
+        header.style.display = 'flex';
+        header.style.justifyContent = 'space-between';
+        header.style.alignItems = 'center';
+        
+        // 作成者と日付を含む左側のコンテナ
+        const infoContainer = document.createElement('div');
+        infoContainer.style.flex = '1';
+        
+        const author = document.createElement('div');
+        author.className = 'post-author';
+        author.textContent = post.author;
+        
+        const date = document.createElement('div');
+        date.className = 'post-date';
+        date.textContent = formatDate(post.created_at);
+        
+        infoContainer.appendChild(author);
+        infoContainer.appendChild(date);
+        header.appendChild(infoContainer);
+        
+        // 削除ボタン用の右側コンテナ
+        const actionContainer = document.createElement('div');
+        
+        // 自分の投稿の場合、削除リンクを追加
+        const username = localStorage.getItem('username');
+        console.log(`投稿検証: ID=${post.id}、作成者=${post.author}、現在ユーザー=${username}`);
+        
+        if (post.author === username) {
+            // 削除ボタン（シンプルなアンカータグ）を追加
+            const deleteLink = document.createElement('a');
+            deleteLink.href = '#';
+            deleteLink.className = 'delete-post-btn';
+            deleteLink.title = '投稿を削除';
+            deleteLink.innerHTML = '<span class="material-icons">delete</span>';
+            
+            // スタイルをカスタマイズ
+            deleteLink.style.backgroundColor = '#c0392b';
+            deleteLink.style.color = 'white';
+            deleteLink.style.border = 'none';
+            deleteLink.style.borderRadius = '4px';
+            deleteLink.style.padding = '5px';
+            deleteLink.style.cursor = 'pointer';
+            deleteLink.style.textDecoration = 'none';
+            deleteLink.style.display = 'block';
+            
+            // イベントリスナーを直接追加
+            deleteLink.onclick = function(e) {
+                e.preventDefault();
+                if (confirm('この投稿を削除してもよろしいですか？コメントと添付ファイルも削除されます。')) {
+                    console.log(`削除リンクがクリックされました: 投稿ID=${post.id}`);
+                    
+                    // 直接URLに移動せず、JavaScriptで削除を実行
+                    const url = `/board/api/posts/${post.id}/delete`;
+                    const formData = new FormData();
+                    
+                    // POST送信（より確実に）
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', url, true);
+                    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+                    
+                    xhr.onload = function() {
+                        if (xhr.status === 200) {
+                            try {
+                                const data = JSON.parse(xhr.responseText);
+                                if (data.status === 'success') {
+                                    const postEl = document.querySelector(`.post[data-id="${post.id}"]`);
+                                    if (postEl) {
+                                        postEl.remove();
+                                        alert('投稿を削除しました');
+                                    }
+                                } else {
+                                    alert('削除に失敗しました: ' + (data.error || '不明なエラー'));
+                                }
+                            } catch (e) {
+                                console.error('JSONパースエラー:', e);
+                                alert('エラーが発生しました');
+                            }
+                        } else {
+                            alert('削除に失敗しました: ' + xhr.status);
+                        }
+                    };
+                    
+                    xhr.onerror = function() {
+                        alert('ネットワークエラーが発生しました');
+                    };
+                    
+                    xhr.send(formData);
+                }
+                return false;
+            };
+            
+            actionContainer.appendChild(deleteLink);
+            header.appendChild(actionContainer);
+        }
+        
+        // 投稿内容
+        const content = document.createElement('div');
+        content.className = 'post-content';
+        content.textContent = post.content;
+        
+        postElement.appendChild(header);
+        postElement.appendChild(content);
+        
+        // 添付ファイル
+        if (post.attachments && post.attachments.length > 0) {
+            const attachmentsDiv = document.createElement('div');
+            attachmentsDiv.className = 'post-attachments';
+            
+            post.attachments.forEach(attachment => {
+                const attachmentLink = document.createElement('a');
+                attachmentLink.className = 'attachment';
+                attachmentLink.href = `/board/api/attachments/${attachment.id}`;
+                attachmentLink.target = '_blank';
+                
+                const icon = document.createElement('span');
+                icon.className = 'material-icons';
+                icon.textContent = getFileIcon(attachment.filename);
+                
+                attachmentLink.appendChild(icon);
+                attachmentLink.appendChild(document.createTextNode(attachment.filename));
+                attachmentsDiv.appendChild(attachmentLink);
+            });
+            
+            postElement.appendChild(attachmentsDiv);
+        }
+        
+        // コメント
+        const comments = document.createElement('div');
+        comments.className = 'comments';
+        
+        if (post.comments && post.comments.length > 0) {
+            post.comments.forEach(comment => {
+                comments.appendChild(createCommentElement(comment));
+            });
+        }
+        postElement.appendChild(comments);
+        
+        // 新しいコメントフォーム
+        const commentForm = document.createElement('div');
+        commentForm.className = 'new-comment-form';
+        commentForm.innerHTML = `
+            <form class="add-comment-form" data-post-id="${post.id}">
+                <div class="form-group">
+                    <textarea name="content" placeholder="コメントを入力" required></textarea>
+                </div>
+                <div class="form-group">
+                    <div class="file-input-container">
+                        <button type="button" class="btn btn-secondary">
+                            <span class="material-icons">attach_file</span>添付
+                        </button>
+                        <input type="file" name="files" multiple>
+                    </div>
+                    <div class="attachment-preview"></div>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <span class="material-icons">comment</span>コメント
+                </button>
+            </form>
+        `;
+        postElement.appendChild(commentForm);
+        
+        setTimeout(() => {
+            // コメントフォームのイベント設定
+            const form = postElement.querySelector('.add-comment-form');
+            if (form) {
+                form.addEventListener('submit', handleCommentSubmit);
+                
+                const fileInput = form.querySelector('input[type="file"]');
+                if (fileInput) {
+                    fileInput.addEventListener('change', function() {
+                        showAttachmentPreview(this, form.querySelector('.attachment-preview'));
+                    });
+                }
+            }
+        }, 10);
+        
+        return postElement;
+    }
+    
+    // コメント要素の作成
+    function createCommentElement(comment) {
+        const commentElement = document.createElement('div');
+        commentElement.className = 'comment';
+        commentElement.dataset.id = comment.id;
+        
+        // コメントヘッダー
+        const header = document.createElement('div');
+        header.className = 'comment-header';
+        
+        const author = document.createElement('div');
+        author.className = 'comment-author';
+        author.textContent = comment.author;
+        
+        const date = document.createElement('div');
+        date.className = 'comment-date';
+        date.textContent = formatDate(comment.created_at);
+        
+        header.appendChild(author);
+        header.appendChild(date);
+        
+        // コメント内容
+        const content = document.createElement('div');
+        content.className = 'comment-content';
+        content.textContent = comment.content;
+        
+        // 添付ファイル
+        let attachments = '';
+        if (comment.attachments && comment.attachments.length > 0) {
+            const attachmentsDiv = document.createElement('div');
+            attachmentsDiv.className = 'post-attachments';
+            
+            comment.attachments.forEach(attachment => {
+                const attachmentLink = document.createElement('a');
+                attachmentLink.className = 'attachment';
+                attachmentLink.href = `/board/api/attachments/${attachment.id}`;
+                attachmentLink.target = '_blank';
+                
+                const icon = document.createElement('span');
+                icon.className = 'material-icons';
+                icon.textContent = getFileIcon(attachment.filename);
+                
+                attachmentLink.appendChild(icon);
+                attachmentLink.appendChild(document.createTextNode(attachment.filename));
+                attachmentsDiv.appendChild(attachmentLink);
+            });
+            
+            attachments = attachmentsDiv.outerHTML;
+        }
+        
+        // 要素の組み立て
+        commentElement.innerHTML = `
+            ${header.outerHTML}
+            ${content.outerHTML}
+            ${attachments}
+        `;
+        
+        return commentElement;
+    }
+    
+    // 日付のフォーマット
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        return `${date.getFullYear()}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+    }
+    
+    // ファイルタイプに応じたアイコンを取得
+    function getFileIcon(filename) {
+        const ext = filename.split('.').pop().toLowerCase();
+        
+        switch (ext) {
+            case 'pdf':
+                return 'picture_as_pdf';
+            case 'doc':
+            case 'docx':
+                return 'description';
+            case 'xls':
+            case 'xlsx':
+                return 'table_chart';
+            case 'ppt':
+            case 'pptx':
+                return 'slideshow';
+            case 'jpg':
+            case 'jpeg':
+            case 'png':
+            case 'gif':
+            case 'bmp':
+                return 'image';
+            case 'mp4':
+            case 'avi':
+            case 'mov':
+                return 'movie';
+            case 'mp3':
+            case 'wav':
+            case 'ogg':
+                return 'audio_file';
+            case 'zip':
+            case 'rar':
+            case '7z':
+                return 'archive';
+            default:
+                return 'insert_drive_file';
+        }
+    }
+    
+    // 添付ファイルのプレビュー表示
+    function showAttachmentPreview(input, container) {
+        container.innerHTML = '';
+        
+        if (input.files.length > 0) {
+            const fileList = document.createElement('div');
+            fileList.className = 'file-list';
+            
+            for (let i = 0; i < input.files.length; i++) {
+                const file = input.files[i];
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                
+                const icon = document.createElement('span');
+                icon.className = 'material-icons';
+                icon.textContent = getFileIcon(file.name);
+                
+                fileItem.appendChild(icon);
+                fileItem.appendChild(document.createTextNode(file.name));
+                fileList.appendChild(fileItem);
+            }
+            
+            container.appendChild(fileList);
+        }
+    }
+    
+    // 新規投稿フォームの設定
+    document.getElementById('new-post-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const content = document.getElementById('post-content').value.trim();
+        const username = localStorage.getItem('username');
+        
+        if (!content || !username) {
+            alert('内容とユーザー名は必須です');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('content', content);
+        formData.append('author', username);
+        
+        const fileInput = document.getElementById('post-files');
+        for (let i = 0; i < fileInput.files.length; i++) {
+            formData.append('files', fileInput.files[i]);
+        }
+        
+        fetch('/board/api/posts', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // フォームをリセット
+                document.getElementById('post-content').value = '';
+                document.getElementById('post-files').value = '';
+                document.getElementById('post-attachments-preview').innerHTML = '';
+                
+                // Socket.IOイベントによる自動追加があるため、
+                // ここではDOM操作で追加しない
+                // モバイルデバイスなど接続が遅い場合のフィードバック用にメッセージ表示
+                console.log('投稿が作成されました。socketイベントで更新されます。');
+            } else {
+                alert('投稿に失敗しました: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('エラー:', error);
+            alert('投稿中にエラーが発生しました');
+        });
+    });
+    
+    // コメント送信処理
+    function handleCommentSubmit(e) {
+        e.preventDefault();
+        
+        const form = e.target;
+        const postId = form.dataset.postId;
+        const content = form.querySelector('textarea').value.trim();
+        const username = localStorage.getItem('username');
+        
+        if (!content || !username) {
+            alert('内容とユーザー名は必須です');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('content', content);
+        formData.append('author', username);
+        
+        const fileInput = form.querySelector('input[type="file"]');
+        for (let i = 0; i < fileInput.files.length; i++) {
+            formData.append('files', fileInput.files[i]);
+        }
+        
+        fetch(`/board/api/posts/${postId}/comments`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // フォームをリセット
+                form.querySelector('textarea').value = '';
+                form.querySelector('input[type="file"]').value = '';
+                form.querySelector('.attachment-preview').innerHTML = '';
+                
+                // Socket.IOによる自動追加があるためここでは何もしない
+                console.log('コメントが作成されました。socketイベントで更新されます。');
+            } else {
+                alert('コメントの投稿に失敗しました: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('エラー:', error);
+            alert('コメント投稿中にエラーが発生しました');
+        });
+    }
+    
+    // ファイル選択時のプレビュー表示
+    document.getElementById('post-files').addEventListener('change', function() {
+        showAttachmentPreview(this, document.getElementById('post-attachments-preview'));
+    });
+    
+    // Socket.IOイベント - 新規投稿
+    socket.on('new_post', function(post) {
+        const postsContainer = document.getElementById('posts-container');
+        
+        // 既存の「投稿がありません」メッセージを削除
+        const emptyMessage = postsContainer.querySelector('.card');
+        if (emptyMessage && emptyMessage.textContent.includes('まだ投稿がありません')) {
+            postsContainer.innerHTML = '';
+        }
+        
+        // 投稿がまだない場合のみ追加
+        const existingPost = document.querySelector(`.post[data-id="${post.id}"]`);
+        if (!existingPost) {
+            postsContainer.insertBefore(createPostElement(post), postsContainer.firstChild);
+        }
+    });
+    
+    // Socket.IOイベント - 新規コメント
+    socket.on('new_comment', function(data) {
+        const post = document.querySelector(`.post[data-id="${data.post_id}"]`);
+        if (post) {
+            const commentsContainer = post.querySelector('.comments');
+            // コメントがまだ追加されていない場合のみ追加
+            const existingComment = commentsContainer.querySelector(`.comment[data-id="${data.comment.id}"]`);
+            if (!existingComment) {
+                commentsContainer.appendChild(createCommentElement(data.comment));
+            }
+        }
+    });
+    
+    // 投稿削除処理（通常のPOSTリクエストを使用）
+    function deletePost(postId) {
+        console.log(`削除ボタンがクリックされました。投稿ID: ${postId}`);
+        
+        // POSTリクエスト用に代替URLを使用
+        const url = `/board/api/posts/${postId}/delete`;
+        console.log(`削除リクエスト準備完了: ${url} (POST)`);
+        
+        // フェッチAPIを使用してPOSTリクエスト送信
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            console.log(`レスポンスステータス: ${response.status}`);
+            return response.json();
+        })
+        .then(data => {
+            console.log('削除APIからのレスポンス:', data);
+            if (data.status === 'success') {
+                // UIから投稿を削除
+                const posts = document.querySelectorAll(`.post[data-id="${postId}"]`);
+                posts.forEach(post => post.remove());
+                alert('投稿を削除しました');
+            } else {
+                alert('投稿の削除に失敗しました: ' + (data.error || '不明なエラー'));
+            }
+        })
+        .catch(error => {
+            console.error('エラー:', error);
+            alert('投稿の削除中にエラーが発生しました:\n' + error);
+        });
+    }
+
+    // Socket.IOイベント - 投稿削除
+    socket.on('delete_post', function(data) {
+        const posts = document.querySelectorAll(`.post[data-id="${data.post_id}"]`);
+        posts.forEach(post => post.remove());
+    });
+</script>
+{% endblock %}

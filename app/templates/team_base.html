@@ -4,22 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <meta name="description" content="ゴルフコース攻略のためのAIアシスタント">
-    <title>{% block title %}Golf AI Strategist{% endblock %}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>{% block title %}チーム連絡ツール{% endblock %} - Golf AI Strategist</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/team_style.css') }}">
-    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <!-- CSP設定 -->
-    <meta http-equiv="Content-Security-Policy" content="{{ config.get('CSP', '') }}">
-    <!-- アクセシビリティ対応 -->
-    <meta name="color-scheme" content="light">
     {% block head %}{% endblock %}
 </head>
 <body>
     <header>
         <div class="container">
-            <h1><a href="{{ url_for('main.index') }}" aria-label="Golf AI Strategist ホームページ">Golf AI Strategist</a></h1>
+            <h1><a href="{{ url_for('main.index') }}">Golf AI Strategist</a></h1>
             <nav>
                 <ul>
                     <li><a href="{{ url_for('main.index') }}">AI戦略</a></li>
@@ -38,7 +31,7 @@
 
     <footer>
         <div class="container">
-            <p>&copy; {{ now.year }} Golf AI Strategist</p>
+            <p>&copy; 2025 Golf AI Strategist</p>
         </div>
     </footer>
 

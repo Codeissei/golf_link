@@ -27,12 +27,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "開発手順.md",
+                "file": "README.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "開発手順"
+              "title": "README"
             }
           }
         ],
@@ -109,7 +109,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "開発手順.md",
+                "file": "README.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -119,7 +119,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "開発手順へのバックリンク"
+              "title": "READMEへのバックリンク"
             }
           },
           {
@@ -128,12 +128,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "開発手順.md",
+                "file": "README.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "開発手順からのアウトゴーイングリンク"
+              "title": "READMEからのアウトゴーイングリンク"
             }
           },
           {
@@ -157,13 +157,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "開発手順.md",
+                "file": "README.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "開発手順のアウトライン"
+              "title": "READMEのアウトライン"
             }
           }
         ]
@@ -183,8 +183,11 @@
       "command-palette:コマンドパレットを開く": false
     }
   },
-  "active": "948f5df2bbce34bc",
+  "active": "e478ec2d3141e847",
   "lastOpenFiles": [
+    "Perplexity_api連携.png",
+    "システム概要.png",
+    "開発手順.md",
     "screenshots/result.png",
     "screenshots/スクリーンショット 2025-05-21 170211.png",
     "screenshots/input.png",
@@ -201,13 +204,10 @@
     "flask_session/tmpbnmq3zf9.__wz_cache",
     "flask_session/tmpuc8ie0nd.__wz_cache",
     "flask_session/tmplk_6743n.__wz_cache",
-    "Perplexity_api連携.png",
-    "システム概要.png",
     "README.md",
     "Pasted image 20250521134042.png",
     "Pasted image 20250521134025.png",
     "要件定義書.md",
-    "開発手順.md",
     "要求定義書.md",
     "Welcome.md"
   ]

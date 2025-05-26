@@ -1,0 +1,16 @@
+services:
+  # Webサービス定義
+  - type: web
+    name: golf-ai-strategist
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --worker-class eventlet -w 1 'app:create_app()'
+    envVars:
+      - key: FLASK_APP
+        value: run.py
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PERPLEXITY_API_KEY
+        sync: false
+    autoDeploy: true
+    healthCheckPath: /

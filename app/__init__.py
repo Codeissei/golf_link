@@ -5,10 +5,18 @@ import logging
 from logging.handlers import RotatingFileHandler
 from datetime import datetime
 import jinja2
+from app.models.db import init_db
+from app.socketio_events import init_socketio
 
 def create_app(test_config=None):
     """アプリケーションファクトリ関数"""
     app = Flask(__name__, instance_relative_config=True)
+    
+    # インスタンスフォルダの作成
+    try:
+        os.makedirs(app.instance_path)
+    except OSError:
+        pass
     
     # 環境変数から設定を読み込み
     app.config.update(
@@ -17,7 +25,10 @@ def create_app(test_config=None):
         SESSION_TYPE='filesystem',
         SESSION_PERMANENT=False,
         PERMANENT_SESSION_LIFETIME=1800,  # 30分
-        MAX_CONTENT_LENGTH=2 * 1024,  # 最大2KB
+        MAX_CONTENT_LENGTH=10 * 1024 * 1024,  # 最大10MB
+        SQLALCHEMY_DATABASE_URI=f"sqlite:///{os.path.join(app.instance_path, 'golf_ai_strategist.sqlite')}",
+        SQLALCHEMY_TRACK_MODIFICATIONS=False,
+        UPLOAD_FOLDER=os.path.join(app.instance_path, 'uploads')
     )
     
     # 設定ファイルの読み込み
@@ -62,11 +73,19 @@ def create_app(test_config=None):
         app.logger.info('Golf AI Strategist startup')
     
     # ルートの登録
-    from app.routes import main
+    from app.routes import main, board, messages
     app.register_blueprint(main.bp)
+    app.register_blueprint(board.bp)
+    app.register_blueprint(messages.bp)
+    
+    # データベースの初期化
+    init_db(app)
+    
+    # SocketIOの初期化
+    socketio = init_socketio(app)
     
     @app.context_processor
     def inject_now():
         return {'now': datetime.utcnow()}
     
-    return app
+    return app, socketio
