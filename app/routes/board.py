@@ -232,7 +232,15 @@ def download_attachment(attachment_id):
             'status': 'error'
         }), 404
     
-    # ファイルを送信
+    # PDFファイルの場合はプレビュー表示を優先
+    if attachment.file_type == 'application/pdf':
+        return send_from_directory(
+            os.path.dirname(attachment.file_path),
+            os.path.basename(attachment.file_path),
+            as_attachment=False
+        )
+    
+    # その他のファイルはダウンロード
     return send_from_directory(
         os.path.dirname(attachment.file_path),
         os.path.basename(attachment.file_path),
