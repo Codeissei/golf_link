@@ -1,1 +1,1 @@
-web: gunicorn --worker-class eventlet -w 1 'app:get_wsgi_application()'
+web: gunicorn -w 1 -b 0.0.0.0:$PORT 'app:create_app()'
