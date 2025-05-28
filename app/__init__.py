@@ -8,7 +8,11 @@ import jinja2
 from app.models.db import init_db
 from app.socketio_events import init_socketio
 
+# Gunicorn用のアプリケーションオブジェクト
+application = None
+
 def create_app(test_config=None):
+    global application
     """アプリケーションファクトリ関数"""
     app = Flask(__name__, instance_relative_config=True)
     
@@ -105,4 +109,17 @@ def create_app(test_config=None):
     def inject_now():
         return {'now': datetime.utcnow()}
     
+    # グローバル変数にアプリケーションを保存（get_wsgi_application関数で使用）
+    application = app
+    
     return app, socketio
+
+def get_wsgi_application():
+    """Gunicorn用のWSGIアプリケーションを返す関数"""
+    # create_app()が既に呼ばれていて、applicationが設定されている場合はそれを返す
+    if application is not None:
+        return application
+    
+    # まだcreate_app()が呼ばれていない場合は呼び出して、Flaskアプリのみを返す
+    app, _ = create_app()
+    return app
