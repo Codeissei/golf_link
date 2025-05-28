@@ -1,3 +1,6 @@
+import eventlet
+eventlet.monkey_patch()
+
 from flask import Flask
 from flask_session import Session
 import os
@@ -7,7 +10,6 @@ from datetime import datetime
 import jinja2
 from app.models.db import init_db
 from app.socketio_events import init_socketio
-import eventlet
 
 # Gunicorn用のアプリケーションオブジェクト
 application = None
