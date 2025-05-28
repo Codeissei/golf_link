@@ -1,8 +1,8 @@
-# --- Web サービス定義 ----------------------------------------
+# --- Web サービス ------------------------------------------
 services:
   - type: web
+    plan: free
     name: golf-ai-strategist
-    plan: free         
     env: python
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn --worker-class eventlet -w 1 'app:create_app()'
@@ -30,9 +30,8 @@ services:
     autoDeploy: true
     healthCheckPath: /
 
-# --- マネージド Postgres 定義 -------------------------------
+# --- マネージド Postgres ------------------------------------
 databases:
   - name: golf-db
-    plan: free              # 無料枠（30 日・1 GB）
+    plan: free                  # ← デフォルトで 1 GB
     postgresMajorVersion: "16"
-    diskSizeGB: 1           # 省略可（free は固定 1 GB）
