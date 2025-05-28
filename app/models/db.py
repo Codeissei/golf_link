@@ -82,10 +82,15 @@ class Attachment(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     filename = db.Column(db.String(255), nullable=False)
-    file_path = db.Column(db.String(500), nullable=False)
+    file_path = db.Column(db.String(500), nullable=True)  # ローカルストレージの場合のパス
     file_type = db.Column(db.String(100))
     file_size = db.Column(db.Integer)  # バイト単位
     uploaded_at = db.Column(db.DateTime, default=datetime.now)
+    
+    # Google Drive関連のフィールド
+    storage_type = db.Column(db.String(20), default='local')  # 'local' または 'google_drive'
+    drive_file_id = db.Column(db.String(100), nullable=True)  # Google DriveのファイルID
+    drive_view_url = db.Column(db.String(500), nullable=True) # Google Driveの表示URL
     
     # 関連付け（どれか1つだけnullableではない）
     post_id = db.Column(db.Integer, db.ForeignKey('posts.id'), nullable=True)
@@ -93,14 +98,31 @@ class Attachment(db.Model):
     message_id = db.Column(db.Integer, db.ForeignKey('messages.id'), nullable=True)
 
     def to_dict(self):
-        return {
+        result = {
             'id': self.id,
             'filename': self.filename,
-            'file_path': self.file_path,
             'file_type': self.file_type,
             'file_size': self.file_size,
             'uploaded_at': self.uploaded_at.isoformat(),
+            'storage_type': self.storage_type,
         }
+        
+        # ストレージタイプに応じて適切なURLを提供
+        if self.storage_type == 'google_drive' and self.drive_view_url:
+            result['file_url'] = self.drive_view_url
+        else:
+            result['file_path'] = self.file_path
+            
+        return result
+        
+    @property
+    def access_url(self):
+        """ファイルへのアクセスURLを返す"""
+        if self.storage_type == 'google_drive' and self.drive_view_url:
+            return self.drive_view_url
+        else:
+            # ローカルファイルの場合はルートを返す（実際の実装ではFlaskのurl_forを使用する）
+            return f"/uploads/{self.filename}"
 
 
 # データベース初期化関数

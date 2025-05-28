@@ -19,6 +19,15 @@ def create_app(test_config=None):
         pass
     
     # 環境変数から設定を読み込み
+    # 環境変数DATABASE_URLが設定されていればPostgresを使用、なければSQLiteを使用
+    database_url = os.environ.get('DATABASE_URL')
+    if database_url and database_url.startswith("postgres:"):
+        # RenderのPostgresQLURLは'postgres://'で始まるが、SQLAlchemyは'postgresql://'を期待する
+        database_url = database_url.replace("postgres:", "postgresql:", 1)
+    else:
+        # デフォルトはSQLite
+        database_url = f"sqlite:///{os.path.join(app.instance_path, 'golf_ai_strategist.sqlite')}"
+    
     app.config.update(
         SECRET_KEY=os.environ.get('SECRET_KEY', 'dev'),
         PERPLEXITY_API_KEY=os.environ.get('PERPLEXITY_API_KEY', ''),
@@ -26,9 +35,17 @@ def create_app(test_config=None):
         SESSION_PERMANENT=False,
         PERMANENT_SESSION_LIFETIME=1800,  # 30分
         MAX_CONTENT_LENGTH=10 * 1024 * 1024,  # 最大10MB
-        SQLALCHEMY_DATABASE_URI=f"sqlite:///{os.path.join(app.instance_path, 'golf_ai_strategist.sqlite')}",
+        SQLALCHEMY_DATABASE_URI=database_url,
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
-        UPLOAD_FOLDER=os.path.join(app.instance_path, 'uploads')
+        UPLOAD_FOLDER=os.path.join(app.instance_path, 'uploads'),
+        # 本番環境用の設定
+        PRODUCTION=os.environ.get('PRODUCTION', 'False').lower() == 'true',
+        # PerplexityのAPIモデル
+        PERPLEXITY_MODEL=os.environ.get('PERPLEXITY_MODEL', 'sonar-pro'),
+        # Google Drive設定
+        USE_GOOGLE_DRIVE=os.environ.get('USE_GOOGLE_DRIVE', 'False').lower() == 'true',
+        GOOGLE_DRIVE_CREDENTIALS=os.environ.get('GOOGLE_DRIVE_CREDENTIALS', None),
+        GOOGLE_DRIVE_FOLDER_ID=os.environ.get('GOOGLE_DRIVE_FOLDER_ID', None)
     )
     
     # 設定ファイルの読み込み

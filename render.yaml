@@ -12,5 +12,29 @@ services:
         generateValue: true
       - key: PERPLEXITY_API_KEY
         sync: false
+      - key: PRODUCTION
+        value: "true"
+      - key: PERPLEXITY_MODEL
+        value: "sonar-pro"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: golf-db
+          property: connectionString
+      - key: USE_GOOGLE_DRIVE
+        value: "true"
+      - key: GOOGLE_DRIVE_CREDENTIALS
+        sync: false
+      - key: GOOGLE_DRIVE_FOLDER_ID
+        sync: false
     autoDeploy: true
     healthCheckPath: /
+
+  # データベース定義
+  - type: pserv
+    name: golf-db
+    env: docker
+    plan: free # 無料プラン
+    disk:
+      name: postgres
+      mountPath: /var/lib/postgresql/data
+      sizeGB: 1 # 1GBの割り当て

@@ -30,6 +30,13 @@
         </div>
     </header>
 
+    {% if not config.PRODUCTION %}
+    <!-- テスト環境通知バナー -->
+    <div class="notification-banner" style="background-color: #ffcc00; color: #333; padding: 10px; text-align: center; font-weight: bold;">
+        ⚠️ テスト環境のため、投稿・メッセージデータは一時的です。アプリ再起動時にデータが消去される可能性があります。
+    </div>
+    {% endif %}
+
     <main>
         <div class="container">
             {% block content %}{% endblock %}
