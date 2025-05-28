@@ -1,6 +1,3 @@
-import eventlet
-eventlet.monkey_patch()
-
 from flask import Flask
 from flask_session import Session
 import os
@@ -10,6 +7,7 @@ from datetime import datetime
 import jinja2
 from app.models.db import init_db
 from app.socketio_events import init_socketio
+import eventlet
 
 # Gunicorn用のアプリケーションオブジェクト
 application = None
@@ -41,7 +39,7 @@ def create_app(test_config=None):
         SESSION_TYPE='filesystem',
         SESSION_PERMANENT=False,
         PERMANENT_SESSION_LIFETIME=1800,  # 30分
-        MAX_CONTENT_LENGTH=10 * 1024 * 1024,  # 最大10MB
+        MAX_CONTENT_LENGTH=16 * 1024 * 1024,  # 最大16MB (PDFファイル対応のため増加)
         SQLALCHEMY_DATABASE_URI=database_url,
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
         UPLOAD_FOLDER=os.path.join(app.instance_path, 'uploads'),
