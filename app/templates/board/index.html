@@ -234,11 +234,19 @@
             const attachmentsDiv = document.createElement('div');
             attachmentsDiv.className = 'post-attachments';
             
+            // プレビューコンテナ（最初は非表示）
+            const previewContainer = document.createElement('div');
+            previewContainer.className = 'preview-container';
+            previewContainer.style.display = 'none';
+            
             post.attachments.forEach(attachment => {
                 const attachmentLink = document.createElement('a');
                 attachmentLink.className = 'attachment';
                 attachmentLink.href = `/board/api/attachments/${attachment.id}`;
                 attachmentLink.target = '_blank';
+                attachmentLink.dataset.filename = attachment.filename;
+                attachmentLink.dataset.filetype = attachment.file_type || '';
+                attachmentLink.dataset.id = attachment.id;
                 
                 const icon = document.createElement('span');
                 icon.className = 'material-icons';
@@ -246,10 +254,92 @@
                 
                 attachmentLink.appendChild(icon);
                 attachmentLink.appendChild(document.createTextNode(attachment.filename));
+                
+                // クリックイベントでプレビュー表示
+                attachmentLink.addEventListener('click', function(e) {
+                    // PDFや画像の場合はプレビュー表示
+                    const fileType = this.dataset.filetype;
+                    const fileName = this.dataset.filename;
+                    const fileUrl = this.href;
+                    const fileExt = fileName.split('.').pop().toLowerCase();
+                    
+                    // プレビュー対応ファイルタイプの場合
+                    if (
+                        fileType.startsWith('image/') || 
+                        fileType === 'application/pdf' ||
+                        fileType.startsWith('video/') ||
+                        fileType.startsWith('audio/')
+                    ) {
+                        e.preventDefault(); // 通常のリンク動作を停止
+                        
+                        // プレビューコンテナを表示
+                        previewContainer.style.display = 'block';
+                        previewContainer.innerHTML = '';
+                        
+                        // プレビュータイトル
+                        const previewTitle = document.createElement('div');
+                        previewTitle.className = 'preview-title';
+                        previewTitle.innerHTML = `<span class="material-icons">${getFileIcon(fileName)}</span>${fileName}`;
+                        previewContainer.appendChild(previewTitle);
+                        
+                        // プレビュー内容
+                        if (fileType.startsWith('image/')) {
+                            // 画像プレビュー
+                            const img = document.createElement('img');
+                            img.className = 'image-preview';
+                            img.src = fileUrl;
+                            img.alt = fileName;
+                            previewContainer.appendChild(img);
+                        } else if (fileType === 'application/pdf') {
+                            // PDFプレビュー
+                            const iframe = document.createElement('iframe');
+                            iframe.className = 'pdf-preview';
+                            iframe.src = fileUrl;
+                            iframe.title = fileName;
+                            previewContainer.appendChild(iframe);
+                        } else if (fileType.startsWith('video/')) {
+                            // 動画プレビュー
+                            const video = document.createElement('video');
+                            video.className = 'video-preview';
+                            video.controls = true;
+                            video.src = fileUrl;
+                            previewContainer.appendChild(video);
+                        } else if (fileType.startsWith('audio/')) {
+                            // 音声プレビュー
+                            const audio = document.createElement('audio');
+                            audio.className = 'audio-preview';
+                            audio.controls = true;
+                            audio.src = fileUrl;
+                            previewContainer.appendChild(audio);
+                        }
+                        
+                        // 閉じるボタン
+                        const closeBtn = document.createElement('button');
+                        closeBtn.className = 'btn btn-secondary';
+                        closeBtn.innerHTML = '<span class="material-icons">close</span>閉じる';
+                        closeBtn.style.marginTop = '1rem';
+                        closeBtn.addEventListener('click', function() {
+                            previewContainer.style.display = 'none';
+                        });
+                        previewContainer.appendChild(closeBtn);
+                        
+                        // ダウンロードボタン
+                        const downloadBtn = document.createElement('a');
+                        downloadBtn.className = 'btn btn-primary';
+                        downloadBtn.href = fileUrl;
+                        downloadBtn.download = fileName;
+                        downloadBtn.innerHTML = '<span class="material-icons">download</span>ダウンロード';
+                        downloadBtn.style.marginTop = '1rem';
+                        downloadBtn.style.marginLeft = '1rem';
+                        previewContainer.appendChild(downloadBtn);
+                    }
+                });
+                
                 attachmentsDiv.appendChild(attachmentLink);
             });
             
             postElement.appendChild(attachmentsDiv);
+            postElement.appendChild(previewContainer);
         }
         
         // コメント
@@ -331,17 +421,27 @@
         content.className = 'comment-content';
         content.textContent = comment.content;
         
+        commentElement.appendChild(header);
+        commentElement.appendChild(content);
+        
         // 添付ファイル
-        let attachments = '';
         if (comment.attachments && comment.attachments.length > 0) {
             const attachmentsDiv = document.createElement('div');
             attachmentsDiv.className = 'post-attachments';
+            
+            // プレビューコンテナ（最初は非表示）
+            const previewContainer = document.createElement('div');
+            previewContainer.className = 'preview-container';
+            previewContainer.style.display = 'none';
             
             comment.attachments.forEach(attachment => {
                 const attachmentLink = document.createElement('a');
                 attachmentLink.className = 'attachment';
                 attachmentLink.href = `/board/api/attachments/${attachment.id}`;
                 attachmentLink.target = '_blank';
+                attachmentLink.dataset.filename = attachment.filename;
+                attachmentLink.dataset.filetype = attachment.file_type || '';
+                attachmentLink.dataset.id = attachment.id;
                 
                 const icon = document.createElement('span');
                 icon.className = 'material-icons';
@@ -349,18 +449,93 @@
                 
                 attachmentLink.appendChild(icon);
                 attachmentLink.appendChild(document.createTextNode(attachment.filename));
+                
+                // クリックイベントでプレビュー表示
+                attachmentLink.addEventListener('click', function(e) {
+                    // PDFや画像の場合はプレビュー表示
+                    const fileType = this.dataset.filetype;
+                    const fileName = this.dataset.filename;
+                    const fileUrl = this.href;
+                    const fileExt = fileName.split('.').pop().toLowerCase();
+                    
+                    // プレビュー対応ファイルタイプの場合
+                    if (
+                        fileType.startsWith('image/') || 
+                        fileType === 'application/pdf' ||
+                        fileType.startsWith('video/') ||
+                        fileType.startsWith('audio/')
+                    ) {
+                        e.preventDefault(); // 通常のリンク動作を停止
+                        
+                        // プレビューコンテナを表示
+                        previewContainer.style.display = 'block';
+                        previewContainer.innerHTML = '';
+                        
+                        // プレビュータイトル
+                        const previewTitle = document.createElement('div');
+                        previewTitle.className = 'preview-title';
+                        previewTitle.innerHTML = `<span class="material-icons">${getFileIcon(fileName)}</span>${fileName}`;
+                        previewContainer.appendChild(previewTitle);
+                        
+                        // プレビュー内容
+                        if (fileType.startsWith('image/')) {
+                            // 画像プレビュー
+                            const img = document.createElement('img');
+                            img.className = 'image-preview';
+                            img.src = fileUrl;
+                            img.alt = fileName;
+                            previewContainer.appendChild(img);
+                        } else if (fileType === 'application/pdf') {
+                            // PDFプレビュー
+                            const iframe = document.createElement('iframe');
+                            iframe.className = 'pdf-preview';
+                            iframe.src = fileUrl;
+                            iframe.title = fileName;
+                            previewContainer.appendChild(iframe);
+                        } else if (fileType.startsWith('video/')) {
+                            // 動画プレビュー
+                            const video = document.createElement('video');
+                            video.className = 'video-preview';
+                            video.controls = true;
+                            video.src = fileUrl;
+                            previewContainer.appendChild(video);
+                        } else if (fileType.startsWith('audio/')) {
+                            // 音声プレビュー
+                            const audio = document.createElement('audio');
+                            audio.className = 'audio-preview';
+                            audio.controls = true;
+                            audio.src = fileUrl;
+                            previewContainer.appendChild(audio);
+                        }
+                        
+                        // 閉じるボタン
+                        const closeBtn = document.createElement('button');
+                        closeBtn.className = 'btn btn-secondary';
+                        closeBtn.innerHTML = '<span class="material-icons">close</span>閉じる';
+                        closeBtn.style.marginTop = '1rem';
+                        closeBtn.addEventListener('click', function() {
+                            previewContainer.style.display = 'none';
+                        });
+                        previewContainer.appendChild(closeBtn);
+                        
+                        // ダウンロードボタン
+                        const downloadBtn = document.createElement('a');
+                        downloadBtn.className = 'btn btn-primary';
+                        downloadBtn.href = fileUrl;
+                        downloadBtn.download = fileName;
+                        downloadBtn.innerHTML = '<span class="material-icons">download</span>ダウンロード';
+                        downloadBtn.style.marginTop = '1rem';
+                        downloadBtn.style.marginLeft = '1rem';
+                        previewContainer.appendChild(downloadBtn);
+                    }
+                });
+                
                 attachmentsDiv.appendChild(attachmentLink);
             });
             
-            attachments = attachmentsDiv.outerHTML;
+            commentElement.appendChild(attachmentsDiv);
+            commentElement.appendChild(previewContainer);
         }
-        
-        // 要素の組み立て
-        commentElement.innerHTML = `
-            ${header.outerHTML}
-            ${content.outerHTML}
-            ${attachments}
-        `;
         
         return commentElement;
     }
@@ -565,42 +740,6 @@
         }
     });
     
-    // 投稿削除処理（通常のPOSTリクエストを使用）
-    function deletePost(postId) {
-        console.log(`削除ボタンがクリックされました。投稿ID: ${postId}`);
-        
-        // POSTリクエスト用に代替URLを使用
-        const url = `/board/api/posts/${postId}/delete`;
-        console.log(`削除リクエスト準備完了: ${url} (POST)`);
-        
-        // フェッチAPIを使用してPOSTリクエスト送信
-        fetch(url, {
-            method: 'POST',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(response => {
-            console.log(`レスポンスステータス: ${response.status}`);
-            return response.json();
-        })
-        .then(data => {
-            console.log('削除APIからのレスポンス:', data);
-            if (data.status === 'success') {
-                // UIから投稿を削除
-                const posts = document.querySelectorAll(`.post[data-id="${postId}"]`);
-                posts.forEach(post => post.remove());
-                alert('投稿を削除しました');
-            } else {
-                alert('投稿の削除に失敗しました: ' + (data.error || '不明なエラー'));
-            }
-        })
-        .catch(error => {
-            console.error('エラー:', error);
-            alert('投稿の削除中にエラーが発生しました:\n' + error);
-        });
-    }
-
     // Socket.IOイベント - 投稿削除
     socket.on('delete_post', function(data) {
         const posts = document.querySelectorAll(`.post[data-id="${data.post_id}"]`);
