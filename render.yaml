@@ -30,11 +30,8 @@ services:
     healthCheckPath: /
 
   # データベース定義
-  - type: pserv
-    name: golf-db
-    env: docker
-    plan: free # 無料プラン
-    disk:
-      name: postgres
-      mountPath: /var/lib/postgresql/data
-      sizeGB: 1 # 1GBの割り当て
+  databases:          # ← 新しいセクション
+    - name: golf-db
+      plan: free      # 30 日制限・1 GB 上限に注意
+      postgresMajorVersion: "16"
+      diskSizeGB: 1   # 省略可
