@@ -29,11 +29,29 @@ def save_file(file):
         file_path = os.path.join(upload_dir, unique_filename)
         file.save(file_path)
         
+        # ファイルタイプの判定を改善
+        file_type = file.content_type
+        if not file_type:
+            # 拡張子からMIMEタイプを推測
+            ext = filename.split('.')[-1].lower()
+            if ext in ['mp4', 'webm', 'ogg']:
+                file_type = f'video/{ext}'
+            elif ext in ['mp3', 'wav']:
+                file_type = f'audio/{ext}'
+            elif ext in ['jpg', 'jpeg']:
+                file_type = 'image/jpeg'
+            elif ext == 'png':
+                file_type = 'image/png'
+            elif ext == 'gif':
+                file_type = 'image/gif'
+            elif ext == 'pdf':
+                file_type = 'application/pdf'
+        
         # Attachmentモデルに保存
         attachment = Attachment(
             filename=filename,
             file_path=file_path,
-            file_type=file.content_type,
+            file_type=file_type,
             file_size=os.path.getsize(file_path)
         )
         return attachment
